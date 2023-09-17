@@ -36,13 +36,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qcommon/qcommon.h"
 #include "../renderer/qgl.h"
 #include "../renderercommon/tr_types.h"
+#ifndef __vita__
 #include "unix_glw.h"
+#else
+#include <vitaGL.h>
+#endif
 
 #include <dlfcn.h>
 
 #define GLE( ret, name, ... ) ret ( APIENTRY * q##name )( __VA_ARGS__ );
+#ifndef __vita__
 QGL_LinX11_PROCS;
 QGL_Swp_PROCS;
+#endif
 #undef GLE
 
 /*
@@ -53,7 +59,7 @@ QGL_Swp_PROCS;
 void QGL_Shutdown( qboolean unloadDLL )
 {
 	Com_Printf( "...shutting down QGL\n" );
-
+#ifndef __vita__
 	if ( glw_state.OpenGLLib && unloadDLL )
 	{
 		Com_Printf( "...unloading OpenGL DLL\n" );
@@ -85,6 +91,7 @@ void QGL_Shutdown( qboolean unloadDLL )
 	QGL_LinX11_PROCS;
 	QGL_Swp_PROCS;
 #undef GLE
+#endif
 }
 
 static int glErrorCount = 0;
@@ -92,13 +99,15 @@ static int glErrorCount = 0;
 void *GL_GetProcAddress( const char *symbol )
 {
 	void *sym;
-
+#ifdef __vita__
+	sym = vglGetProcAddress(symbol);
+#else
 	sym = dlsym( glw_state.OpenGLLib, symbol );
 	if ( !sym )
 	{
 		glErrorCount++;
 	}
-
+#endif
 	return sym;
 }
 
@@ -118,7 +127,9 @@ void *GL_GetProcAddress( const char *symbol )
 qboolean QGL_Init( const char *dllname )
 {
 	Com_Printf( "...initializing QGL\n" );
-
+#ifdef __vita__
+	vglInitExtended(1024 * 1024, 960, 544, 8 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
+#else
 	if ( glw_state.OpenGLLib == NULL )
 	{
 		Com_Printf( "...loading '%s' : ", dllname );
@@ -165,6 +176,6 @@ qboolean QGL_Init( const char *dllname )
 #define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) ); if ( !q##name ) { Com_Printf( "Error resolving core X11 functions\n" ); return qfalse; }
 	QGL_LinX11_PROCS;
 #undef GLE
-
+#endif
 	return qtrue;
 }

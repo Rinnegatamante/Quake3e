@@ -79,13 +79,18 @@ static qboolean	winsockInitialized = qfalse;
 #	include <errno.h>
 #	include <netdb.h>
 #	include <netinet/in.h>
+#ifndef __vita__
 #	include <arpa/inet.h>
 #	include <net/if.h>
 #	include <sys/ioctl.h>
+#else
+#	include <vitasdk.h>
+#	include <psp2/net/net.h>
+#endif
 #	include <sys/types.h>
 #	include <sys/time.h>
 #	include <unistd.h>
-#	if !defined(__sun) && !defined(__sgi)
+#	if !defined(__sun) && !defined(__sgi) && !defined(__vita__)
 #		include <ifaddrs.h>
 #	endif
 
@@ -360,7 +365,11 @@ static const char *gai_error_str( int ecode )
 		case EAI_NONAME:
 			return "Unknown host.";
 		default:
+#ifndef __vita__
 			return gai_strerror( ecode );
+#else
+			return "";
+#endif
 	}
 }
 
@@ -370,6 +379,31 @@ static const char *gai_error_str( int ecode )
 Sys_StringToSockaddr
 =============
 */
+#ifdef __vita__
+static qboolean Sys_StringToSockaddr(const char *s, sockaddr_t *sadr, int sadr_len, sa_family_t family, int type)
+{
+	struct hostent	*h;
+	//char	*colon; // bk001204 - unused
+	
+	memset (sadr, 0, sizeof(*sadr));
+	((struct sockaddr_in *)sadr)->sin_family = AF_INET;
+	
+	((struct sockaddr_in *)sadr)->sin_port = 0;
+	
+	if ( s[0] >= '0' && s[0] <= '9')
+	{
+		*(int *)&((struct sockaddr_in *)sadr)->sin_addr = inet_addr(s);
+	}
+	else
+	{
+		if (! (h = gethostbyname(s)) )
+			return qfalse;
+		*(int *)&((struct sockaddr_in *)sadr)->sin_addr = *(int *)h->h_addr_list[0];
+	}
+	
+	return qtrue;
+}
+#else
 static qboolean Sys_StringToSockaddr( const char *s, sockaddr_t *sadr, int sadr_len, sa_family_t family, int type )
 {
 	struct addrinfo hint;
@@ -434,13 +468,21 @@ static qboolean Sys_StringToSockaddr( const char *s, sockaddr_t *sadr, int sadr_
 
 	return qfalse;
 }
-
+#endif
 
 /*
 =============
 Sys_SockaddrToString
 =============
 */
+#ifdef __vita__
+static void Sys_SockaddrToString(char *dest, int destlen, const sockaddr_t *input)
+{
+	int haddr = sceNetNtohl(((struct sockaddr_in *)input)->sin_addr.s_addr);
+
+	sprintf(dest, "%d.%d.%d.%d:%d", (haddr >> 24) & 0xff, (haddr >> 16) & 0xff, (haddr >> 8) & 0xff, haddr & 0xff, sceNetNtohs(((struct sockaddr_in *)input)->sin_port));
+}
+#else
 static void Sys_SockaddrToString( char *dest, int destlen, const sockaddr_t *input )
 {
 	socklen_t inputlen;
@@ -455,7 +497,7 @@ static void Sys_SockaddrToString( char *dest, int destlen, const sockaddr_t *inp
 	if ( getnameinfo( (const struct sockaddr *)input, inputlen, dest, destlen, NULL, 0, NI_NUMERICHOST ) && destlen > 0 )
 		*dest = '\0';
 }
-
+#endif
 
 /*
 =============
@@ -982,13 +1024,16 @@ static SOCKET NET_IPSocket( const char *net_interface, int port, int *err ) {
 		return newsocket;
 	}
 	// make it non-blocking
+#ifdef __vita__
+	setsockopt(newsocket, SOL_SOCKET, SO_NONBLOCK, (char *)&_true, sizeof(_true));
+#else
 	if( ioctlsocket( newsocket, FIONBIO, &_true ) == SOCKET_ERROR ) {
 		Com_Printf( "WARNING: NET_IPSocket: ioctl FIONBIO: %s\n", NET_ErrorString() );
 		*err = socketError;
 		closesocket(newsocket);
 		return INVALID_SOCKET;
 	}
-
+#endif
 	// make it broadcast capable
 	if( setsockopt( newsocket, SOL_SOCKET, SO_BROADCAST, (char *) &i, sizeof(i) ) == SOCKET_ERROR ) {
 		Com_Printf( "WARNING: NET_IPSocket: setsockopt SO_BROADCAST: %s\n", NET_ErrorString() );
@@ -1017,7 +1062,9 @@ static SOCKET NET_IPSocket( const char *net_interface, int port, int *err ) {
 	if( bind( newsocket, (void *)&address, sizeof(address) ) == SOCKET_ERROR ) {
 		Com_Printf( "WARNING: NET_IPSocket: bind: %s\n", NET_ErrorString() );
 		*err = socketError;
+		printf("closebro\n");
 		closesocket( newsocket );
+		printf("closedbro\n");
 		return INVALID_SOCKET;
 	}
 
@@ -1419,6 +1466,51 @@ static void NET_AddLocalAddress( const char *ifname, const struct sockaddr *addr
 
 
 #ifndef _WIN32
+#ifdef __vita__
+static unsigned long myAddr;
+static void NET_GetLocalAddress( void ) {
+	char				hostname[256];
+	struct addrinfo	hint;
+	struct addrinfo	*res = NULL;
+
+	numIP = 0;
+
+	SceNetCtlInfo info;
+	sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info);
+	sceNetInetPton(SCE_NET_AF_INET, info.ip_address, &myAddr);
+
+	//->Com_Printf( "Hostname: %s\n", hostname );
+
+	memset(&hint, 0, sizeof(hint));
+
+	hint.ai_family = AF_UNSPEC;
+	hint.ai_socktype = SOCK_DGRAM;
+
+	
+	
+	//if(!getaddrinfo(hostname, NULL, &hint, &res))
+	{
+		struct sockaddr_in mask4;
+		struct sockaddr_in addr;
+		addr.sin_family = AF_INET;
+		addr.sin_port = 5000;
+		addr.sin_addr.s_addr = myAddr;
+		
+		/* On operating systems where it's more difficult to find out the configured interfaces, we'll just assume a
+		 * netmask with all bits set. */
+
+		memset(&mask4, 0, sizeof(mask4));
+		mask4.sin_family = AF_INET;
+		memset(&mask4.sin_addr.s_addr, 0xFF, sizeof(mask4.sin_addr.s_addr));
+
+		// add all IPs from returned list.
+		NET_AddLocalAddress("", (struct sockaddr*)&addr, (struct sockaddr *) &mask4);
+
+		Sys_ShowIP();
+	}
+
+}
+#else
 static void NET_GetLocalAddress( void )
 {
 	char	hostname[256];
@@ -1447,6 +1539,7 @@ static void NET_GetLocalAddress( void )
 		Sys_ShowIP();
 	}
 }
+#endif
 #else // _WIN32
 static void NET_GetLocalAddress( void ) {
 	char	hostname[256];
@@ -1554,10 +1647,12 @@ static void NET_OpenIP( void ) {
 	if(net_enabled->integer & NET_ENABLEV4)
 	{
 		for( i = 0 ; i < 10 ; i++ ) {
+			printf("bro?\n");
 			ip_socket = NET_IPSocket( net_ip->string, port + i, &err );
+			printf("bro!\n");
 			if (ip_socket != INVALID_SOCKET) {
 				Cvar_SetIntegerValue( "net_port", port + i );
-
+printf("bro\n");
 				if (net_socksEnabled->integer)
 					NET_OpenSocks( port + i );
 
@@ -1569,10 +1664,12 @@ static void NET_OpenIP( void ) {
 					break;
 			}
 		}
-		
+		printf("bro2\n");
 		if(ip_socket == INVALID_SOCKET)
 			Com_Printf( "WARNING: Couldn't bind to a v4 ip address.\n");
+		printf("bro3\n");
 	}
+	printf("bro4\n");
 }
 
 
@@ -1764,6 +1861,10 @@ static void NET_Config( qboolean enableNetworking ) {
 	}
 }
 
+#ifdef __vita__
+static void *net_memory = NULL;
+#define NET_INIT_SIZE (141 * 1024)
+#endif
 
 /*
 ====================
@@ -1784,6 +1885,28 @@ void NET_Init( void ) {
 	Com_DPrintf( "Winsock Initialized\n" );
 #endif
 
+#ifdef __vita__
+	sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
+	sceSysmoduleLoadModule(SCE_SYSMODULE_HTTP);
+	SceNetInitParam initparam;
+	int ret = sceNetShowNetstat();
+	if (ret == SCE_NET_ERROR_ENOTINIT) {
+		net_memory = malloc(NET_INIT_SIZE);
+
+		initparam.memory = net_memory;
+		initparam.size = NET_INIT_SIZE;
+		initparam.flags = 0;
+
+		ret = sceNetInit(&initparam);
+		
+	} 
+	ret = sceNetCtlInit();
+	if (ret < 0){
+		sceNetTerm();
+		free(net_memory);
+		net_memory = NULL;
+	}
+#endif
 	NET_Config( qtrue );
 	
 	Cmd_AddCommand( "net_restart", NET_Restart_f );
@@ -1805,6 +1928,14 @@ void NET_Shutdown( void ) {
 #ifdef _WIN32
 	WSACleanup();
 	winsockInitialized = qfalse;
+#endif
+#ifdef __vita__
+	sceNetCtlTerm();
+	sceNetTerm();
+	if (net_memory) free(net_memory);
+	net_memory = NULL;
+	sceSysmoduleUnloadModule(SCE_SYSMODULE_HTTP);
+	sceSysmoduleUnloadModule(SCE_SYSMODULE_NET);
 #endif
 }
 

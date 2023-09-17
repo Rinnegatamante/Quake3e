@@ -38,7 +38,11 @@ ARMv7-A_ARMv7-R_DDI0406_2007.pdf
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef __vita__
 #include <sys/mman.h>
+#else
+#include <vitasdk.h>
+#endif
 #include <fcntl.h>
 #include <unistd.h>
 #include <math.h>
@@ -143,6 +147,14 @@ static	uint32_t	savedOffset[ OFFSET_T_LAST ];
 
 #define R4_R11 (1<<R4)|(1<<R5)|(1<<R6)|(1<<R7)|(1<<R8)|(1<<R9)|(1<<R10)|(1<<R11)
 
+#ifdef __vita__
+#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
+
+SceUID vm_memblock = 0xDEADBEEF;
+void *vm_addr[3] = {NULL, NULL, NULL};
+uint8_t vm_used[3] = {0, 0, 0};
+#endif
+
 /* arm eabi, builtin gcc functions */
 int __aeabi_idiv(int, int);
 unsigned __aeabi_uidiv(unsigned, unsigned);
@@ -183,11 +195,20 @@ static void VM_Destroy_Compiled( vm_t *vm )
 {
 	if ( vm->codeBase.ptr )
 	{
+#ifdef __vita__
+	for (int i = 0; i < 3; i++) {
+		if (vm->codeBase.ptr == vm_addr[i]) {
+			vm_used[i] = 0;
+			break;
+		}
+	}
+#else
 #ifdef _WIN32
 		VirtualFree( vm->codeBase.ptr, 0, MEM_RELEASE );
 #else
 		if ( munmap( vm->codeBase.ptr, vm->codeLength ) )
 			Com_Printf( S_COLOR_RED "%s(): memory unmap failed, possible memory leak!\n", __func__ );
+#endif
 #endif
 	}
 
@@ -3156,6 +3177,23 @@ __recompile:
 			Com_Printf( S_COLOR_YELLOW "%s(%s): VirtualAlloc failed\n", __func__, vm->name );
 			return qfalse;
 		}
+#elif defined(__vita__)
+		if (vm_memblock == 0xDEADBEEF) {
+			vm_memblock = sceKernelAllocMemBlockForVM("vm block", 12 * 1024 * 1024);
+			if(vm_memblock < 0)
+				Com_Error(ERR_FATAL, "VM_CompileARM: can't mmap memory");
+			sceKernelGetMemBlockBase(vm_memblock, &vm_addr[0]);
+			sceKernelOpenVMDomain();
+			vm_addr[1] = vm_addr[0] + 4 * 1024 * 1024;
+			vm_addr[2] = vm_addr[1] + 4 * 1024 * 1024;
+		}
+		for (int i = 0; i < 3; i++) {
+			if (!vm_used[i]) {
+				vm_used[i] = 1;
+				vm->codeBase.ptr = vm_addr[i];
+				break;
+			}	
+		}
 #else
 		vm->codeBase.ptr = mmap( NULL, compiledOfs, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
 		if ( vm->codeBase.ptr == MAP_FAILED ) {
@@ -3196,6 +3234,8 @@ __recompile:
 			return qfalse;
 		}
 	}
+#elif defined(__vita__)
+	sceKernelSyncVMDomain(vm_memblock, vm->codeBase.ptr, vm->codeLength);
 #else
 	if ( mprotect( vm->codeBase.ptr, vm->codeLength, PROT_READ | PROT_EXEC ) ) {
 		VM_Destroy_Compiled( vm );

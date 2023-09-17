@@ -226,10 +226,12 @@ static const char *R_ResolveSymbols( sym_t *syms, int count )
 	for ( i = 0; i < count; i++ )
 	{
 		*syms[ i ].symbol = ri.GL_GetProcAddress( syms[ i ].name );
+#ifndef __vita__
 		if ( *syms[ i ].symbol == NULL )
 		{
 			return syms[ i ].name;
 		}
+#endif
 	}
 	return NULL;
 }

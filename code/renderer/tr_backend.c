@@ -1297,7 +1297,7 @@ static const void *RB_DrawBuffer( const void *data ) {
 	const drawBufferCommand_t	*cmd;
 
 	cmd = (const drawBufferCommand_t *)data;
-
+#ifndef __vita__
 #ifdef USE_FBO
 	if ( fboEnabled ) {
 		FBO_BindMain();
@@ -1308,7 +1308,7 @@ static const void *RB_DrawBuffer( const void *data ) {
 #else
 	qglDrawBuffer( cmd->buffer );
 #endif
-
+#endif
 	// clear screen for debugging
 	if ( r_clear->integer ) {
 		qglClearColor( 1, 0, 0.5, 1 );

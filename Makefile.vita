@@ -1,0 +1,214 @@
+TOPDIR ?= $(CURDIR)
+
+APP_TITLE	:=	Quake3e
+
+TARGET		:=	$(notdir $(CURDIR))
+BUILD		:=	build
+B 			:=	code
+
+SOURCEFILES	:=	$(B)/renderer/tr_animation.o \
+  $(B)/renderer/tr_arb.o \
+  $(B)/renderer/tr_backend.o \
+  $(B)/renderer/tr_bsp.o \
+  $(B)/renderer/tr_cmds.o \
+  $(B)/renderer/tr_curve.o \
+  $(B)/renderer/tr_flares.o \
+  $(B)/renderercommon/tr_font.o \
+  $(B)/renderer/tr_image.o \
+  $(B)/renderercommon/tr_image_png.o \
+  $(B)/renderercommon/tr_image_jpg.o \
+  $(B)/renderercommon/tr_image_bmp.o \
+  $(B)/renderercommon/tr_image_tga.o \
+  $(B)/renderercommon/tr_image_pcx.o \
+  $(B)/renderer/tr_init.o \
+  $(B)/renderer/tr_light.o \
+  $(B)/renderer/tr_main.o \
+  $(B)/renderer/tr_marks.o \
+  $(B)/renderer/tr_mesh.o \
+  $(B)/renderer/tr_model.o \
+  $(B)/renderer/tr_model_iqm.o \
+  $(B)/renderercommon/tr_noise.o \
+  $(B)/renderer/tr_scene.o \
+  $(B)/renderer/tr_shade.o \
+  $(B)/renderer/tr_shade_calc.o \
+  $(B)/renderer/tr_shader.o \
+  $(B)/renderer/tr_shadows.o \
+  $(B)/renderer/tr_sky.o \
+  $(B)/renderer/tr_surface.o \
+  $(B)/renderer/tr_vbo.o \
+  $(B)/renderer/tr_world.o \
+  $(B)/qcommon/q_shared.o \
+  $(B)/qcommon/puff.o \
+  $(B)/qcommon/q_math.o \
+  \
+  $(B)/client/cl_cgame.o \
+  $(B)/client/cl_cin.o \
+  $(B)/client/cl_console.o \
+  $(B)/client/cl_input.o \
+  $(B)/client/cl_keys.o \
+  $(B)/client/cl_main.o \
+  $(B)/client/cl_net_chan.o \
+  $(B)/client/cl_parse.o \
+  $(B)/client/cl_scrn.o \
+  $(B)/client/cl_ui.o \
+  $(B)/client/cl_avi.o \
+  $(B)/client/cl_jpeg.o \
+  $(B)/client/cl_curl.o \
+  \
+  $(B)/qcommon/cm_load.o \
+  $(B)/qcommon/cm_patch.o \
+  $(B)/qcommon/cm_polylib.o \
+  $(B)/qcommon/cm_test.o \
+  $(B)/qcommon/cm_trace.o \
+  \
+  $(B)/qcommon/cmd.o \
+  $(B)/qcommon/common.o \
+  $(B)/qcommon/cvar.o \
+  $(B)/qcommon/files.o \
+  $(B)/qcommon/history.o \
+  $(B)/qcommon/keys.o \
+  $(B)/qcommon/md4.o \
+  $(B)/qcommon/md5.o \
+  $(B)/qcommon/msg.o \
+  $(B)/qcommon/net_chan.o \
+  $(B)/qcommon/net_ip.o \
+  $(B)/qcommon/huffman.o \
+  $(B)/qcommon/huffman_static.o \
+  \
+  $(B)/client/snd_adpcm.o \
+  $(B)/client/snd_dma.o \
+  $(B)/client/snd_mem.o \
+  $(B)/client/snd_mix.o \
+  $(B)/client/snd_wavelet.o \
+  \
+  $(B)/client/snd_main.o \
+  $(B)/client/snd_codec.o \
+  $(B)/client/snd_codec_wav.o \
+  $(B)/client/snd_codec_ogg.o \
+  \
+  $(B)/server/sv_bot.o \
+  $(B)/server/sv_ccmds.o \
+  $(B)/server/sv_client.o \
+  $(B)/server/sv_filter.o \
+  $(B)/server/sv_game.o \
+  $(B)/server/sv_init.o \
+  $(B)/server/sv_main.o \
+  $(B)/server/sv_net_chan.o \
+  $(B)/server/sv_snapshot.o \
+  $(B)/server/sv_world.o \
+  \
+  $(B)/qcommon/unzip.o \
+  $(B)/qcommon/vm.o \
+  $(B)/qcommon/vm_interpreted.o \
+  $(B)/qcommon/vm_armv7l.o \
+  \
+  $(B)/botlib/be_aas_bspq3.o \
+  $(B)/botlib/be_aas_cluster.o \
+  $(B)/botlib/be_aas_debug.o \
+  $(B)/botlib/be_aas_entity.o \
+  $(B)/botlib/be_aas_file.o \
+  $(B)/botlib/be_aas_main.o \
+  $(B)/botlib/be_aas_move.o \
+  $(B)/botlib/be_aas_optimize.o \
+  $(B)/botlib/be_aas_reach.o \
+  $(B)/botlib/be_aas_route.o \
+  $(B)/botlib/be_aas_routealt.o \
+  $(B)/botlib/be_aas_sample.o \
+  $(B)/botlib/be_ai_char.o \
+  $(B)/botlib/be_ai_chat.o \
+  $(B)/botlib/be_ai_gen.o \
+  $(B)/botlib/be_ai_goal.o \
+  $(B)/botlib/be_ai_move.o \
+  $(B)/botlib/be_ai_weap.o \
+  $(B)/botlib/be_ai_weight.o \
+  $(B)/botlib/be_ea.o \
+  $(B)/botlib/be_interface.o \
+  $(B)/botlib/l_crc.o \
+  $(B)/botlib/l_libvar.o \
+  $(B)/botlib/l_log.o \
+  $(B)/botlib/l_memory.o \
+  $(B)/botlib/l_precomp.o \
+  $(B)/botlib/l_script.o \
+  $(B)/botlib/l_struct.o \
+  \
+  $(B)/unix/unix_main.o \
+  $(B)/unix/unix_shared.o \
+  $(B)/unix/linux_signals.o \
+  \
+  $(B)/sdl/sdl_glimp.o \
+  $(B)/sdl/sdl_gamma.o \
+  $(B)/sdl/sdl_input.o \
+  $(B)/sdl/sdl_snd.o \
+  \
+  $(B)/unix/linux_qgl.o
+
+DATA		:=	data
+INCLUDES	:=	$(B)/code/botlib \
+	$(B)/code/client \
+	$(B)/code/server \
+	$(B)/code/renderer \
+	$(B)/code/renderercommon \
+	$(B)/code/ui \
+	$(B)/code/qcommon
+
+PREFIX  = arm-vita-eabi
+CC      = $(PREFIX)-gcc
+CXX      = $(PREFIX)-g++
+
+export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+			-I$(CURDIR)/$(BUILD)
+
+CFLAGS	:=	-g -O0 -fno-strict-aliasing -fno-lto -Wl,-q,--allow-multiple-definition -fno-short-enums \
+			$(DEFINES) $(INCLUDE) -fno-optimize-sibling-calls -DUSE_OGG_VORBIS -DBOTLIB \
+			-DUSE_SYSTEM_JPEG -DUSE_LOCAL_HEADERS -DUSE_CURL -DUSE_OPENGL_API -fsigned-char \
+			-I$(VITASDK)/arm-vita-eabi/include/SDL2
+
+CFLAGS	+=	$(INCLUDE) -DWITH_VITA_HOMEBREW
+
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+
+ASFLAGS	:=	$(CFLAGS)
+
+LIBS	:= -lSDL2 -lcurl -lvitaGL -lvitashark -lmathneon -lSceShaccCgExt -lSceShaccCg_stub -ltaihen_stub \
+	-lssl -lcrypto -lSceNet_stub -ljpeg -lSceNetCtl_stub -lvorbisfile -lvorbis -logg  -Wl,--whole-archive -lSceSysmodule_stub -Wl,--no-whole-archive \
+	-lpthread -lSceAudio_stub -lSceAudioIn_stub -lSceHid_stub -lz -lScePower_stub -lSceAppUtil_stub \
+	-lSceAppMgr_stub -lSceCommonDialog_stub -lSceCtrl_stub -lSceGxm_stub -lSceMotion_stub -lSceNet_stub \
+	-lSceTouch_stub -lSceSysmodule_stub -lSceKernelDmacMgr_stub -lSceDisplay_stub -lSceIme_stub
+
+export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export TOPDIR	:=	$(CURDIR)
+
+export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
+			$(foreach sf,$(SOURCEFILES),$(CURDIR)/$(dir $(sf))) \
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+
+export DEPSDIR	:=	$(CURDIR)/$(BUILD)
+
+CFILES		:=	$(foreach f,$(SOURCEFILES),$(notdir $(f)))
+
+export OFILES_SRC	:=	$(CFILES)
+export OFILES 	:= $(OFILES_SRC)
+
+all: $(APP_TITLE).vpk
+
+%.vpk: %.velf
+	vita-mksfoex -s TITLE_ID=QUAKE3E00 -d ATTRIBUTE2=12 "Quake3e" param.sfo
+	vita-pack-vpk -s param.sfo -b eboot.bin $@ \
+		-a livearea/icon0.png=sce_sys/icon0.png \
+		-a livearea/bg.png=sce_sys/livearea/contents/bg.png \
+		-a livearea/startup.png=sce_sys/livearea/contents/startup.png \
+		-a livearea/template.xml=sce_sys/livearea/contents/template.xml \
+		-a livearea/pic0.png=sce_sys/pic0.png \
+		-a livearea/TROPHY.TRP=sce_sys/trophy/ELDR00001_00/TROPHY.TRP
+
+%.velf: %.elf
+	cp $< $<.unstripped.elf
+	$(PREFIX)-strip -g $<
+	vita-elf-create $< $@
+	vita-make-fself -c -s $@ eboot.bin
+
+$(APP_TITLE).elf: $(OFILES)
+	$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $@
+
+clean:
+	@rm -rf $(APP_TITLE).velf $(APP_TITLE).elf $(APP_TITLE).vpk param.sfo eboot.bin $(OFILES)

@@ -174,14 +174,18 @@ void R_ImageList_f( void ) {
 				// same as DXT1?
 				estSize /= 2;
 				break;
+#ifndef __vita__
 			case GL_RGBA4:
+#endif
 			case GL_RGBA8:
 			case GL_RGBA:
 				format = "RGBA ";
 				// 4 bytes per pixel
 				estSize *= 4;
 				break;
+#ifndef __vita__
 			case GL_RGB5:
+#endif
 			case GL_RGB8:
 			case GL_RGB:
 				format = "RGB  ";
@@ -543,11 +547,14 @@ static GLint RawImage_GetInternalFormat( const byte *scan, int numPixels, qboole
 
 	if ( RawImage_HasAlpha( scan, numPixels ) )
 	{
+#ifndef __vita__
 		if ( r_texturebits->integer == 16 )
 		{
 			internalFormat = GL_RGBA4;
 		}
-		else if ( r_texturebits->integer == 32 )
+		else
+#endif
+		if ( r_texturebits->integer == 32 )
 		{
 			internalFormat = GL_RGBA8;
 		}
@@ -566,10 +573,12 @@ static GLint RawImage_GetInternalFormat( const byte *scan, int numPixels, qboole
 		{
 			internalFormat = GL_RGB4_S3TC;
 		}
+#ifndef __vita__
 		else if ( r_texturebits->integer == 16 )
 		{
 			internalFormat = GL_RGB5;
 		}
+#endif
 		else if ( r_texturebits->integer == 32 )
 		{
 			internalFormat = GL_RGB8;

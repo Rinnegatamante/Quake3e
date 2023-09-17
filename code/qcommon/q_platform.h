@@ -206,6 +206,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 // =========================================================================
 
+#ifdef __vita__
+#define OS_STRING "PSVita"
+#define ID_INLINE inline
+#define ARCH_STRING "arm"
+#define Q3_LITTLE_ENDIAN
+#undef DLL_EXT
+#define DLL_EXT ".suprx"
+#endif
+
 //catch missing defines in above blocks
 #if !defined( OS_STRING )
 #error "Operating system not supported"

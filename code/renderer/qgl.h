@@ -42,6 +42,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <GL/glx.h>
 #elif defined(__APPLE__)
 #include <OpenGL/gl.h>
+#elif defined(__vita__)
+#include <vitaGL.h>
 #endif
 
 #ifndef APIENTRY
@@ -135,7 +137,9 @@ typedef ptrdiff_t GLintptrARB;
 
 #ifndef GL_VERSION_2_0
 #define GL_VERSION_2_0 1
+#ifndef __vita__
 typedef char GLchar;
+#endif
 #define GL_MAX_TEXTURE_IMAGE_UNITS          0x8872
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 0x8B4D
 #endif
@@ -268,12 +272,15 @@ typedef char GLchar;
 #define QGL_Swp_PROCS \
 	GLE( BOOL,	wglSwapIntervalEXT, int interval )
 #else
+#ifndef __vita__
 #define QGL_Swp_PROCS \
 	GLE( void,	glXSwapIntervalEXT, Display *dpy, GLXDrawable drawable, int interval ) \
 	GLE( int,	glXSwapIntervalMESA, unsigned interval ) \
 	GLE( int,	glXSwapIntervalSGI, int interval )
 #endif
+#endif
 
+#ifndef __vita__
 #define QGL_LinX11_PROCS \
 	GLE( XVisualInfo*, glXChooseVisual, Display *dpy, int screen, int *attribList ) \
 	GLE( GLXContext, glXCreateContext, Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct ) \
@@ -281,15 +288,20 @@ typedef char GLchar;
 	GLE( Bool, glXMakeCurrent, Display *dpy, GLXDrawable drawable, GLXContext ctx) \
 	GLE( void, glXCopyContext, Display *dpy, GLXContext src, GLXContext dst, GLuint mask ) \
 	GLE( void, glXSwapBuffers, Display *dpy, GLXDrawable drawable )
+#endif
 
 #ifndef __APPLE__
 
 #define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
+#ifndef __vita__
 	QGL_Swp_PROCS;
+#endif
 #ifdef _WIN32
 	QGL_Win32_PROCS;
 #else // assume in opposition to win32
+#ifndef __vita__
 	QGL_LinX11_PROCS;
+#endif
 #endif
 #undef GLE
 

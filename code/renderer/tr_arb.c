@@ -345,7 +345,9 @@ void ARB_LightingPass( void )
 	// since this is guaranteed to be a single pass, fill and lock all the arrays
 
 	qglTexCoordPointer( 2, GL_FLOAT, 0, tess.svars.texcoordPtr[0] );
+#ifndef __vita__
 	qglNormalPointer( GL_FLOAT, sizeof( tess.normal[0] ), tess.normal );
+#endif
 	qglVertexPointer( 3, GL_FLOAT, sizeof( tess.xyz[0] ), tess.xyz );
 
 	if ( qglLockArraysEXT )
@@ -1199,11 +1201,15 @@ static const char *glDefToStr( GLint define )
 		CASE_STR(GL_BGRA);
 		CASE_STR(GL_RGB);
 		CASE_STR(GL_RGBA);
+#ifndef __vita__
 		CASE_STR(GL_RGBA4);
+#endif
 		CASE_STR(GL_RGBA8);
+#ifndef __vita__
 		CASE_STR(GL_RGBA12);
 		CASE_STR(GL_RGBA16);
 		CASE_STR(GL_RGB10_A2);
+#endif
 		CASE_STR(GL_R11F_G11F_B10F);
 		// data types
 		CASE_STR(GL_BYTE);
@@ -1213,7 +1219,9 @@ static const char *glDefToStr( GLint define )
 		CASE_STR(GL_INT);
 		CASE_STR(GL_UNSIGNED_INT);
 		CASE_STR(GL_FLOAT);
+#ifndef __vita__
 		CASE_STR(GL_DOUBLE);
+#endif
 		CASE_STR(GL_UNSIGNED_SHORT_4_4_4_4);
 		CASE_STR(GL_UNSIGNED_INT_8_8_8_8);
 		CASE_STR(GL_UNSIGNED_INT_10_10_10_2);
@@ -1261,17 +1269,22 @@ static void getPreferredFormatAndType( GLint format, GLint *pFormat, GLint *pTyp
 		if ( preferredFormat == 0 ) // nVidia ION drivers can do that
 			preferredFormat = GL_RGBA;
 		if ( preferredType == GL_UNSIGNED_NORMALIZED ) { // Intel HD 530 drivers can do that as well
+#ifndef __vita__			
 			if ( format == GL_RGBA12 || format == GL_RGBA16 )
 				preferredType = GL_UNSIGNED_SHORT;
 			else
+#endif
 				preferredType = GL_UNSIGNED_BYTE;
 		}
 	} else {
 __fallback:
+#ifndef __vita__
 		if ( format == GL_RGBA12 || format == GL_RGBA16 ) {
 			preferredFormat = GL_RGBA;
 			preferredType = GL_UNSIGNED_SHORT;
-		} else {
+		} else
+#endif
+		{
 			preferredFormat = GL_RGBA;
 			preferredType = GL_UNSIGNED_BYTE;
 		}
@@ -1305,9 +1318,11 @@ static qboolean FBO_Create( frameBuffer_t *fb, GLsizei width, GLsizei height, qb
 	// (GL_R11F_G11F_B10F is a bit slower at least on AMD GPUs)
 	// but can provide better precision for blurring, also we barely need more than 10 bits for that,
 	// texture formats that doesn't fit into 32bits are just performance-killers for bloom
+#ifndef __vita__	
 	if ( fb - frameBuffers >= BLOOM_BASE )
 		internalFormat = GL_RGB10_A2;
 	else
+#endif
 		internalFormat = fboInternalFormat;
 
 	getPreferredFormatAndType( internalFormat, &textureFormat, &textureType );
@@ -1545,8 +1560,9 @@ static void FBO_BlitToBackBuffer( int index )
 	FBO_Bind( GL_READ_FRAMEBUFFER, src->fbo );
 	FBO_Bind( GL_DRAW_FRAMEBUFFER, 0 );
 	//qglReadBuffer( GL_COLOR_ATTACHMENT0 );
+#ifndef __vita__
 	qglDrawBuffer( GL_BACK );
-
+#endif
 	if ( windowAdjusted )
 	{
 		if ( blitClear > 0 )
@@ -2150,9 +2166,13 @@ void QGL_InitFBO( void )
 
 	switch ( r_hdr->integer )
 	{
+#ifndef __vita__
 		case -1: fboInternalFormat = GL_RGBA4; break;
+#endif
 		case 0: fboInternalFormat = GL_RGBA8; break;
+#ifndef __vita__
 		default: fboInternalFormat = GL_RGBA16; break;
+#endif
 	}
 
 	if ( FBO_CreateMS( &frameBufferMS, w, h ) )

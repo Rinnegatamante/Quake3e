@@ -5682,13 +5682,13 @@ fileHandle_t FS_PipeOpenWrite( const char *cmd, const char *filename ) {
 	if ( FS_CreatePath( ospath ) ) {
 		return FS_INVALID_HANDLE;
 	}
-
+#ifndef __vita__
 #ifdef _WIN32
 	fd->handleFiles.file.o = _popen( cmd, "wb" );
 #else
 	fd->handleFiles.file.o = popen( cmd, "w" );
 #endif
-
+#endif
 	if ( fd->handleFiles.file.o == NULL ) {
 		return FS_INVALID_HANDLE;
 	}
@@ -5708,7 +5708,7 @@ void FS_PipeClose( fileHandle_t f )
 
 	if ( fsh[f].zipFile )
 		return;
-
+#ifndef __vita__
 	if ( fsh[f].handleFiles.file.o ) {
 #ifdef _WIN32
 		_pclose( fsh[f].handleFiles.file.o );
@@ -5716,7 +5716,7 @@ void FS_PipeClose( fileHandle_t f )
 		pclose( fsh[f].handleFiles.file.o );
 #endif
 	}
-
+#endif
 	Com_Memset( &fsh[f], 0, sizeof( fsh[f] ) );
 }
 
@@ -5734,7 +5734,7 @@ void *FS_LoadLibrary( const char *name )
 	void *libHandle = NULL;
 	char *fn;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(__vita__)
 	fn = FS_BuildOSPath( Sys_Pwd(), name, NULL );
 	libHandle = Sys_LoadLibrary( fn );
 #endif

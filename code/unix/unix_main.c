@@ -29,13 +29,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
+#ifndef __vita__
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#endif
 #include <sys/stat.h>
 #include <string.h>
 #include <ctype.h>
 #include <sys/wait.h>
+#ifndef __vita__
 #include <sys/mman.h>
+#endif
 #include <errno.h>
 #include <libgen.h> // dirname
 
@@ -52,7 +56,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 // FIXME TTimo should we gard this? most *nix system should comply?
+#ifndef __vita__
 #include <termios.h>
+#else
+#define PATH_MAX 512
+#endif
 
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
@@ -95,9 +103,9 @@ static int ttycon_hide = 0;
 // TTimo NOTE: I'm not sure how relevant this is
 static int tty_erase;
 static int tty_eof;
-
+#ifndef __vita__
 static struct termios tty_tc;
-
+#endif
 static field_t tty_con;
 
 static cvar_t *ttycon_ansicolor = NULL;
@@ -131,7 +139,7 @@ void Sys_BeginProfiling( void )
 
 }
 
-
+#ifndef __vita__
 // =============================================================
 // tty console routines
 // NOTE: if the user is editing a line when something gets printed to the early console then it won't look good
@@ -209,18 +217,19 @@ void tty_Show( void )
 		}
 	}
 }
-
+#endif
 
 // never exit without calling this, or your terminal will be left in a pretty bad state
 void Sys_ConsoleInputShutdown( void )
 {
+#ifndef __vita__
 	if ( ttycon_on )
 	{
 //		Com_Printf( "Shutdown tty console\n" ); // -EC-
 		tty_Back(); // delete "]" ? -EC-
 		tcsetattr( STDIN_FILENO, TCSADRAIN, &tty_tc );
 	}
-
+#endif
 	// Restore blocking to stdin reads
 	if ( stdin_active )
 	{
@@ -251,6 +260,7 @@ void CON_SigCont( int signum )
 
 void CON_SigTStp( int signum )
 {
+#ifndef __vita__
 	sigset_t mask;
 
 	tty_FlushIn();
@@ -263,6 +273,7 @@ void CON_SigTStp( int signum )
 	signal( SIGTSTP, SIG_DFL );
 
 	kill( getpid(),  SIGTSTP );
+#endif
 }
 
 
@@ -317,13 +328,13 @@ void NORETURN FORMAT_PRINTF(1, 2) QDECL Sys_Error( const char *format, ... )
 //		fcntl( STDIN_FILENO, F_SETFL, fcntl( STDIN_FILENO, F_GETFL, 0) & ~FNDELAY );
 		fcntl( STDIN_FILENO, F_SETFL, stdin_flags );
 	}
-
+#ifndef __vita__
 	// don't bother do a show on this one heh
 	if ( ttycon_on )
 	{
 		tty_Hide();
 	}
-
+#endif
 	va_start( argptr, format );
 	Q_vsnprintf( text, sizeof( text ), format, argptr );
 	va_end( argptr );
@@ -348,6 +359,7 @@ void floating_point_exception_handler( int whatever )
 // warning: might be called from signal handler
 tty_err Sys_ConsoleInputInit( void )
 {
+#ifndef __vita__
 	struct termios tc;
 	const char* term;
 
@@ -424,7 +436,7 @@ tty_err Sys_ConsoleInputInit( void )
 
 	tty_Hide();
 	tty_Show();
-
+#endif
 	return TTY_ENABLED;
 }
 
@@ -437,7 +449,7 @@ char *Sys_ConsoleInput( void )
 	char key;
 	char *s;
 	field_t history;
-
+#ifndef __vita__
 	if ( ttycon_on )
 	{
 		avail = read( STDIN_FILENO, &key, 1 );
@@ -547,7 +559,9 @@ char *Sys_ConsoleInput( void )
 		}
 		return NULL;
 	}
-	else if ( stdin_active && com_dedicated->integer )
+	else
+#endif
+	if ( stdin_active && com_dedicated->integer )
 	{
 		int len;
 		fd_set fdset;
@@ -732,7 +746,7 @@ void Sys_Print( const char *msg )
 {
 	char printmsg[ MAXPRINTMSG ];
 	size_t len;
-
+#ifndef __vita__
 	if ( ttycon_on )
 	{
 		tty_Hide();
@@ -744,6 +758,7 @@ void Sys_Print( const char *msg )
 		len = strlen( printmsg );
 	}
 	else
+#endif
 	{
 		char *out = printmsg;
 		while ( *msg != '\0' && out < printmsg + sizeof( printmsg ) )
@@ -756,11 +771,12 @@ void Sys_Print( const char *msg )
 	}
 
 	write( STDERR_FILENO, printmsg, len );
-
+#ifndef __vita__
 	if ( ttycon_on )
 	{
 		tty_Show();
 	}
+#endif
 }
 
 
@@ -875,8 +891,13 @@ int Sys_ParseArgs( int argc, const char* argv[] )
 	return 0;
 }
 
-
+#ifdef __vita__
+int _newlib_heap_size_user = 256 * 1024 * 1024;
+#include <vitasdk.h>
+int quake_main (unsigned int argc, const char* argv[])
+#else
 int main( int argc, const char* argv[] )
+#endif
 {
 	char con_title[ MAX_CVAR_VALUE_STRING ];
 	int xpos, ypos;
@@ -966,3 +987,41 @@ int main( int argc, const char* argv[] )
 	// never gets here
 	return 0;
 }
+
+#ifdef __vita__
+int main(int argc, char **argv) {
+	// Setting maximum clocks
+	scePowerSetArmClockFrequency(444);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(166);
+	
+	// Checking for libshacccg.suprx existence
+	SceIoStat st1, st2;
+	if (!(sceIoGetstat("ur0:/data/libshacccg.suprx", &st1) >= 0 || sceIoGetstat("ur0:/data/external/libshacccg.suprx", &st2) >= 0)) {
+		vglInit(0);
+		SceMsgDialogUserMessageParam msg_param;
+		sceClibMemset(&msg_param, 0, sizeof(SceMsgDialogUserMessageParam));
+		msg_param.buttonType = SCE_MSG_DIALOG_BUTTON_TYPE_OK;
+		msg_param.msg = (const SceChar8*)"Error: Runtime shader compiler (libshacccg.suprx) is not installed.";
+		SceMsgDialogParam param;
+		sceMsgDialogParamInit(&param);
+		param.mode = SCE_MSG_DIALOG_MODE_USER_MSG;
+		param.userMsgParam = &msg_param;
+		sceMsgDialogInit(&param);
+		while (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED) {
+			vglSwapBuffers(1);
+		}
+		sceKernelExitProcess(0);
+	}
+	
+	// We need a bigger stack to run Quake 3, so we create a new thread with a proper stack size
+	SceUID main_thread = sceKernelCreateThread("Quake III", quake_main, 0x40, 0x400000, 0, 0, NULL);
+	if (main_thread >= 0){
+		sceKernelStartThread(main_thread, 0, NULL);
+		sceKernelWaitThreadEnd(main_thread, NULL, NULL);
+	}
+	return 0;
+	
+}
+#endif

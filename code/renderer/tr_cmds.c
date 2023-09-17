@@ -310,7 +310,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	if ( ( cmd = R_GetCommandBuffer( sizeof( *cmd ) ) ) == NULL )
 		return;
 	cmd->commandId = RC_DRAW_BUFFER;
-
+#ifndef __vita__
 	if ( glConfig.stereoEnabled ) {
 		if ( stereoFrame == STEREO_LEFT ) {
 			cmd->buffer = (int)GL_BACK_LEFT;
@@ -321,6 +321,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		}
 	}
 	else
+#endif
 	{
 		if ( !Q_stricmp( r_drawBuffer->string, "GL_FRONT" ) )
 			cmd->buffer = (int)GL_FRONT;

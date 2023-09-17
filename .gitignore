@@ -5,3 +5,8 @@ output/
 *.user
 cmake-*
 .idea
+*.o
+*.elf
+*.velf
+*.vpk
+*.bin
